@@ -1,0 +1,81 @@
+<style>
+    body {
+        margin: 0;
+        background: black;
+    }
+</style>
+<div id="sketch"></div>
+<script src="https://unpkg.com/kokomi.js@1.9.78/build/kokomi.umd.js"></script>
+<script src="https://unpkg.com/three@0.154.0/build/three.min.js"></script>
+<script>
+    class Sketch extends kokomi.Base {
+        create() {
+            this.camera.position.set(0, 0, 5);
+            new kokomi.OrbitControls(this);
+
+            const geometry = new THREE.SphereGeometry(2, 64, 64);
+            // const geometry = new THREE.PlaneGeometry(4, 4);
+            const material = new THREE.ShaderMaterial({
+                vertexShader: /* glsl */ `
+uniform float iTime;
+uniform vec3 iResolution;
+uniform vec4 iMouse;
+
+varying vec2 vUv;
+
+uniform float uPixelRatio;
+
+void main(){
+    vec3 p=position;
+    gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.);
+    
+    gl_PointSize=50.*uPixelRatio;
+    vec4 mvPosition=modelViewMatrix*vec4(p,1.);
+    gl_PointSize*=(1./-mvPosition.z);
+    
+    vUv=uv;
+}
+  `,
+                fragmentShader: /* glsl */ `
+uniform float iTime;
+uniform vec3 iResolution;
+uniform vec4 iMouse;
+
+varying vec2 vUv;
+
+void main(){
+    vec2 uv=gl_PointCoord;
+    uv=(uv-.5)*2.;
+    
+    float d=length(uv);
+    float c=.05/d;
+    c=pow(c,2.);
+    gl_FragColor=vec4(vec3(1.),c);
+}
+  `,
+                transparent: true,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false,
+                uniforms: {
+                    uPixelRatio: {
+                        value: this.renderer.getPixelRatio()
+                    }
+                }
+            });
+            const points = new THREE.Points(geometry, material);
+            this.scene.add(points);
+
+            const uj = new kokomi.UniformInjector(this);
+            material.uniforms = {
+                ...material.uniforms,
+                ...uj.shadertoyUniforms,
+            };
+            this.update(() => {
+                uj.injectShadertoyUniforms(material.uniforms);
+            });
+        }
+    }
+
+    const sketch = new Sketch("#sketch");
+    sketch.create();
+</script>

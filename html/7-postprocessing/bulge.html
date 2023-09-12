@@ -1,0 +1,45 @@
+<style>
+    body {
+        margin: 0;
+        background: black;
+    }
+</style>
+<shader-toy>
+    <img src="https://s2.loli.net/2023/09/10/QozT59R6KsYmb3q.jpg" name="iChannel0" hidden />
+    <script type="frag"></script>
+</shader-toy>
+<script src="https://unpkg.com/kokomi.js/build/kokomi.umd.js"></script>
+<script>
+    document.querySelector('[type=frag]').textContent = /* glsl */`
+vec2 bulge(vec2 p){
+    // vec2 center=vec2(.5);
+    vec2 center=iMouse.xy/iResolution.xy;
+    
+    float radius=.9;
+    float strength=1.1;
+    
+    p-=center;
+    
+    float d=length(p);
+    d/=radius;
+    float dPow=pow(d,2.);
+    float dRev=strength/(dPow+1.);
+    
+    // p*=d;
+    // p*=dPow;
+    p*=dRev;
+    
+    p+=center;
+    
+    return p;
+}
+
+void mainImage(out vec4 fragColor,in vec2 fragCoord){
+    vec2 uv=fragCoord/iResolution.xy;
+    uv=bulge(uv);
+    vec3 tex=texture(iChannel0,uv).xyz;
+    fragColor=vec4(tex,1.);
+}
+    `;
+    kokomi.ShaderToyElement.register();
+</script>
